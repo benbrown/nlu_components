@@ -1,0 +1,15 @@
+.highlight { 
+  background: #FFCC99;
+}
+
+.taggedEntity:before {
+  content: '{';
+}
+
+.taggedEntity:after {
+  content: '}';
+}
+
+.taggedEntity {
+  background: #CC99CC;
+}
