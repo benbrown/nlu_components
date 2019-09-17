@@ -171,11 +171,13 @@ export const EntityTagger: React.FunctionComponent = (props) => {
       let offset = 0;
       let x = 0;
       while (range.startContainer.parentElement.childNodes[x] != range.startContainer) {
-        // TODO:
-        // can we extract the REAL length of this, instead of what might be an expanded/rendered version?
-        // like, use a data attrib?
-        console.log('NODE VALUE:', range.startContainer.parentElement.childNodes[x]);
-        offset = offset + range.startContainer.parentElement.childNodes[x].textContent.length;
+        // extract the length of actual value, instead of what might be an expanded/rendered version of the tagged entity?
+        if (range.startContainer.parentElement.childNodes[x].attributes && range.startContainer.parentElement.childNodes[x].getAttribute('data-rawtext')) {
+          let rawtext = range.startContainer.parentElement.childNodes[x].getAttribute('data-rawtext');
+          offset = offset + rawtext.length;
+        } else {
+          offset = offset + range.startContainer.parentElement.childNodes[x].textContent.length;
+        }
         x++;
       }
 
