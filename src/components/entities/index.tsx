@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useState, useMemo } from 'react';
 import { ContextualMenu,ContextualMenuItemType } from 'office-ui-fabric-react';
 import { RenderedUtterance } from './renderedUtterance';
@@ -7,7 +7,7 @@ import './styles.css';
 export const EntityTagger: React.FunctionComponent = (props) => {
   const { utteranceText, entities } = props;
 
-  const [renderedText, setRenderedText] = useState(utteranceText);
+  // const [renderedText, setRenderedText] = useState(utteranceText);
   const [menuVisible, setMenuVisibility] = useState(false);
   const [targetPoint, setTargetPoint] = useState(null);
   const [existingEntities, setEntitiesMenu] = useState(null);
@@ -23,6 +23,11 @@ export const EntityTagger: React.FunctionComponent = (props) => {
     entities: []
   });
 
+  useEffect(() => {
+    console.log('TAGGED UTTERANCE:', taggedUtterance);
+  },[taggedUtterance]);
+
+
   const selectEntity = (e, item) => {
     console.log('clicked item', item);
     console.log('current selection', currentSelection);
@@ -34,7 +39,15 @@ export const EntityTagger: React.FunctionComponent = (props) => {
           ...currentSelection,
           entity: item
         }
-      ]
+      ].sort((a,b) => {
+        if (a.start < b.start) {
+          return -1;
+        } else if (a.start > b.start) {
+          return 1;
+        } else {
+          return 0;
+        }
+      })
     });
     setMenuVisibility(false);
   }
@@ -76,11 +89,19 @@ export const EntityTagger: React.FunctionComponent = (props) => {
   }, [entities, currentSelection])
 
 
-  
+  const isOverlapping = (r1, r2) => {
+    console.log('is overlapping?', r1, r2);
+    return (
+      (r2.start <= r1.end && r1.end <= r2.end) ||   //  r1 overlaps r2 on the left
+      (r2.start <= r1.start && r1.start <= r2.end) || // r1 overlaps r2 on the right
+      (r1.start >= r2.start && r1.end <= r2.end) || // r1 is inside r2
+      (r1.start <= r2.start && r1.end >= r2.end)  // r2 is inside r1
+    )
+  }
 
   const resetSelection = (e) => {
       setMenuVisibility(false);
-      setRenderedText(utteranceText);
+      // setRenderedText(utteranceText);
   }
 
   const getSelection = (e) => {
@@ -88,25 +109,78 @@ export const EntityTagger: React.FunctionComponent = (props) => {
     
     let text = selection.toString().replace(/<.*?>/g,'');
     let range = selection.getRangeAt(0);
-    let start = range.startOffset;
-    let end = range.endOffset;
 
+    if (range.startContainer != range.endContainer) {
+      console.log('MULTIPLE CONTAINERS!!!', range);
+
+      // selection started in the main utterance
+      if (range.startContainer.parentNode.tagName==='DIV') {
+        // snap the range to this piece.
+        range.setStart(range.startContainer,range.startOffset);
+        range.setEnd(range.startContainer,range.startContainer.length-1);
+      } else if (range.endContainer.parentNode.tagName==='DIV') {
+        range.setStart(range.endContainer, 0);
+        range.setEnd(range.endContainer, range.endOffset);
+      }
+
+    }
+
+    let start = range.startOffset;
+    let end = range.endOffset - 1;
 
     if (text) {
 
+      console.log('SELECTED TEXT', text);
+      const innerText = range.startContainer.textContent;
+
+      console.log('first char is', innerText[start], innerText[start].match(/\s/));
+      while (innerText[start].match(/\s/) !== null) {
+        console.log('MOVE FORWARD 1 SPACE BECAUSE CHAR')
+        start++;
+      }
+
       // find left wordbreak
-      while (start >= 1 && utteranceText[start-1].match(/\s/) === null) {
+      while (start >= 1 && innerText[start-1].match(/\s/) === null) {
         start--;
       }
 
+
+      console.log('end char', innerText[end]);
+
+      while (innerText[end].match(/\s/) !== null) {
+        console.log('MOVE BACK 1 SPACE BECAUSE CHAR')
+        end--;
+      }
+
       // find right wordbreak
-      while (end < (utteranceText.length) && utteranceText[end].match(/\s/) === null) {
+      while (end < (innerText.length) && innerText[end].match(/\s/) === null) {
+        console.log('looking for a better end char', innerText[end]);
         end++;
       }
 
-      text = utteranceText.substring(start, end);
+      range.setStart(range.startContainer, start);
+      range.setEnd(range.startContainer, end);
 
-      let rendered = utteranceText.replace(text,'<span class="highlight">' + text + '</span>');
+
+      console.log('FINAL RANGE', range, start, end);
+
+      // our selection is now correct.
+      // now we need to find the position of the selected text in the original utterance...
+      text = range.toString();
+
+      let offset = 0;
+      let x = 0;
+      while (range.startContainer.parentElement.childNodes[x] != range.startContainer) {
+        // TODO:
+        // can we extract the REAL length of this, instead of what might be an expanded/rendered version?
+        // like, use a data attrib?
+        console.log('NODE VALUE:', range.startContainer.parentElement.childNodes[x]);
+        offset = offset + range.startContainer.parentElement.childNodes[x].textContent.length;
+        x++;
+      }
+
+      start = start + offset;
+      end = start + text.length;
 
       setCurrentSelection({
         ...currentSelection,
@@ -121,12 +195,9 @@ export const EntityTagger: React.FunctionComponent = (props) => {
       });
 
       setMenuVisibility(true);
-
-      setRenderedText(rendered);
       
     } else {
       setCurrentSelection(null);
-      setRenderedText(utteranceText);
     }
 
   }

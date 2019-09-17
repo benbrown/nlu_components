@@ -22,6 +22,8 @@ export const App: React.FunctionComponent = () => {
       <EntityTagger utteranceText="my birthday is january 25" entities={entities} />
       <EntityTagger utteranceText="What is my insurance company called" entities={entities} />
       <EntityTagger utteranceText="How can i use health insurance" entities={entities} />
+      <EntityTagger utteranceText="can you help me with some help i need to get help" entities={entities} />
+
     </Fragment>
     );
 };
