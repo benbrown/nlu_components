@@ -74,7 +74,8 @@ export const RenderedEntity: React.FunctionComponent = (props) => {
   return (
     <Fragment>
       <span className="taggedEntity" onClick={showMenu} data-rawtext={value}>
-        {entity}={value}
+        {value}
+        <span class="entityName">{entity}</span>
       </span>
       <ContextualMenu hidden={!menuVisible} items={menu} target={targetPoint} onDismiss={hideMenu} gapSpace={10} />
     </Fragment>

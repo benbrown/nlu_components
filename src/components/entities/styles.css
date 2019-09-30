@@ -3,13 +3,23 @@
 }
 
 .taggedEntity:before {
-  content: '{';
+  /* content: '{'; */
 }
 
 .taggedEntity:after {
-  content: '}';
+  /* content: '}'; */
 }
 
 .taggedEntity {
-  background: #CC99CC;
+  position: relative;
+  /* background: #CC99CC; */
+  border-bottom: 2px solid #0078D4;;
+}
+
+.entityName {
+  position: absolute;
+  top: 1.25rem;
+  left: 0;
+  color: #0078D4;
+  font-size: 0.625rem;
 }
